@@ -1,0 +1,16 @@
+{
+  "name": "appnest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AppNest admin and user catalog web app",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node --check server.js && node --check dist/app.mjs && node --check dist/admin.mjs && node --check dist/firebase.mjs",
+    "lint": "node --check server.js && node --check dist/app.mjs && node --check dist/admin.mjs && node --check dist/firebase.mjs"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}

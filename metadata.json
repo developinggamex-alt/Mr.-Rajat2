@@ -1,0 +1,5 @@
+{
+  "name": "AppNest",
+  "description": "Mobile-first app and game catalog with user and admin panels powered by Firebase.",
+  "requestFramePermissions": []
+}

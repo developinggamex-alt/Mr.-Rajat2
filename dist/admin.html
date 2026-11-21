@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><title>AppNest Admin</title><meta name="description" content="Mobile-first app and game catalog with user and admin panels powered by Firebase."><meta property="og:title" content="AppNest Admin"><meta property="og:description" content="Mobile-first app and game catalog with user and admin panels powered by Firebase."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" href="./style.css"></head>
+<body><header><div class="top"><a class="brand" href="./admin.html"><span class="mark">◈</span> App<span>Nest</span></a><a class="subtle" href="./index.html">User panel</a></div></header>
+<main><p class="eyebrow">APPNEST ADMIN</p><h1>Manage catalog</h1><p id="status" class="intro muted" role="status">Connecting to Firebase…</p>
+<section id="gate" class="panel login-card" hidden>
+  <h2>Admin sign in</h2><form id="login"><label>Email<input name="email" class="search" autocomplete="username" type="email" required></label>
+  <label>Password<input name="password" class="search" type="password" autocomplete="current-password" required></label><button class="primary">Sign in</button></form>
+</section>
+<div class="actions"><button id="logout" class="subtle" hidden>Sign out</button></div>
+<div class="admin-grid" id="dashboard" hidden>
+<aside><h2>Catalog</h2><button class="primary" id="new">New listing</button><div id="records"></div></aside>
+<section class="panel"><h2 id="editor-title">New listing</h2>
+<form id="editor" class="wide-form">
+<div class="fields">
+<label>App title <input class="search" name="name" maxlength="100" required></label>
+<label>Category <input class="search" name="category" maxlength="60" required></label>
+<label>Developer <input class="search" name="developer" maxlength="100"></label>
+<label>Version <input class="search" name="version" placeholder="1.0.0" maxlength="40"></label>
+<label class="full">Short tagline <input class="search" name="tagline" maxlength="160"></label>
+<label class="full">Description <textarea class="search" name="description" rows="5" maxlength="12000" required></textarea></label>
+<label class="full">Google Drive APK link <input class="search" name="driveUrl" type="url" placeholder="https://drive.google.com/file/d/…" maxlength="2000"></label>
+<label class="full">Direct APK link <input class="search" name="downloadUrl" type="url" placeholder="https://…" maxlength="2000"><small>Use an APK endpoint with CORS for in-panel progress, pause and resume.</small></label>
+<label>App icon URL <input class="search" name="iconUrl" type="url" maxlength="2000"></label>
+<label>Banner image URL <input class="search" name="bannerUrl" type="url" maxlength="2000"></label>
+<label class="full">Screenshot URLs <textarea class="search" name="screenshots" rows="4" placeholder="One HTTPS image link per line"></textarea></label>
+<label>APK size in MB <input class="search" name="sizeMb" type="number" step="any" min="0"></label>
+<label>Rating <input class="search" name="rating" type="number" step="0.1" min="0" max="5"></label>
+<label>Review count <input class="search" name="reviewCount" type="number" min="0" step="1"></label>
+<label>Download count <input class="search" name="downloadCount" type="number" min="0" step="1"></label>
+<label>App open link <input class="search" name="openUrl" type="url" placeholder="Optional HTTPS app link" maxlength="2000"></label>
+<label><input name="featured" type="checkbox"> Feature on Home</label>
+</div>
+<div class="actions"><button class="primary" name="action" value="publish">Publish listing</button><button class="subtle" name="action" value="draft" formnovalidate>Save as draft</button></div>
+<p class="muted" id="editor-feedback" role="status"></p>
+</form></section></div>
+</main><script type="module" src="./admin.mjs"></script></body></html>
