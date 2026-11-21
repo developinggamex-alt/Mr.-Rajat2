@@ -1,0 +1,245 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all unmatched paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Hardened Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        ('email' in request.auth.token &&
+         request.auth.token.email == 'developinggamex@gmail.com' &&
+         'email_verified' in request.auth.token &&
+         request.auth.token.email_verified == true)
+      );
+    }
+
+    function isHttpsString(value, maxLen) {
+      return value is string && value.size() <= maxLen && value.matches('^https://.*');
+    }
+
+    function isValidAppListing(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 12000 &&
+             data.published is bool &&
+             data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+             (!('developer' in data) || (data.developer is string && data.developer.size() <= 100)) &&
+             (!('version' in data) || (data.version is string && data.version.size() <= 40)) &&
+             (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 160)) &&
+             (!('driveUrl' in data) || isHttpsString(data.driveUrl, 2000)) &&
+             (!('downloadUrl' in data) || isHttpsString(data.downloadUrl, 2000)) &&
+             (!('iconUrl' in data) || isHttpsString(data.iconUrl, 2000)) &&
+             (!('bannerUrl' in data) || isHttpsString(data.bannerUrl, 2000)) &&
+             (!('openUrl' in data) || isHttpsString(data.openUrl, 2000)) &&
+             (!('screenshots' in data) || (data.screenshots is list && data.screenshots.size() <= 12 &&
+               (data.screenshots.size() == 0 || isHttpsString(data.screenshots[0], 2000)))) &&
+             (!('sizeBytes' in data) || (data.sizeBytes is int && data.sizeBytes >= 0)) &&
+             (!('rating' in data) || ((data.rating is float || data.rating is int) && data.rating >= 0 && data.rating <= 5)) &&
+             (!('reviewCount' in data) || (data.reviewCount is int && data.reviewCount >= 0)) &&
+             (!('downloadCount' in data) || (data.downloadCount is int && data.downloadCount >= 0)) &&
+             (!('featured' in data) || data.featured is bool) &&
+             (!data.published || (
+               ('downloadUrl' in data && data.downloadUrl.size() > 0) ||
+               ('driveUrl' in data && data.driveUrl.size() > 0)
+             ));
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             (!('autoCheckUpdates' in data) || data.autoCheckUpdates is bool) &&
+             (!('wifiOnlyDownloads' in data) || data.wifiOnlyDownloads is bool) &&
+             (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
+             (!('recentSearches' in data) || (data.recentSearches is list && data.recentSearches.size() <= 6 &&
+               (data.recentSearches.size() == 0 || (data.recentSearches[0] is string && data.recentSearches[0].size() <= 80))));
+    }
+
+    function isValidTrackedApp(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.status in ['DOWNLOADED', 'INSTALLED'] &&
+             (!('version' in data) || (data.version is string && data.version.size() <= 40)) &&
+             (!('bytes' in data) || (data.bytes is int && data.bytes >= 0)) &&
+             (!('localFileName' in data) || (data.localFileName is string && data.localFileName.size() <= 200)) &&
+             (!('packageName' in data) || (data.packageName is string && data.packageName.size() <= 200)) &&
+             (!('downloadedAt' in data) || (data.downloadedAt is int && data.downloadedAt >= 0)) &&
+             (!('installedAt' in data) || (data.installedAt is int && data.installedAt >= 0));
+    }
+
+    // --- Collection: /admins/{userId} ---
+    match /admins/{userId} {
+      allow get: if isOwner(userId);
+      allow list, create, update, delete: if false;
+    }
+
+    // --- Collection: /apps/{appId} ---
+    match /apps/{appId} {
+      allow get: if isSignedIn() && isValidId(appId) && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(appId) &&
+                       isValidAppListing(incoming()) &&
+                       isAdmin() &&
+                       incoming().published == true &&
+                       incoming().createdBy == request.auth.uid &&
+                       incoming().keys().hasAll(['name', 'category', 'description', 'published', 'createdBy', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'name', 'category', 'developer', 'version', 'tagline', 'description',
+                         'driveUrl', 'downloadUrl', 'iconUrl', 'bannerUrl', 'openUrl',
+                         'screenshots', 'sizeBytes', 'rating', 'reviewCount', 'downloadCount',
+                         'featured', 'published', 'createdBy', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(appId) &&
+                       isValidAppListing(incoming()) &&
+                       isAdmin() &&
+                       incoming().published == true &&
+                       incoming().createdBy == existing().createdBy &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'category', 'developer', 'version', 'tagline', 'description',
+                         'driveUrl', 'downloadUrl', 'iconUrl', 'bannerUrl', 'openUrl',
+                         'screenshots', 'sizeBytes', 'rating', 'reviewCount', 'downloadCount',
+                         'featured', 'published', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(appId) && isAdmin();
+    }
+
+    // --- Collection: /appDrafts/{appId} ---
+    match /appDrafts/{appId} {
+      allow get: if isValidId(appId) && isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn() &&
+                       isValidId(appId) &&
+                       isValidAppListing(incoming()) &&
+                       isAdmin() &&
+                       incoming().published == false &&
+                       incoming().createdBy == request.auth.uid &&
+                       incoming().keys().hasAll(['name', 'category', 'description', 'published', 'createdBy', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'name', 'category', 'developer', 'version', 'tagline', 'description',
+                         'driveUrl', 'downloadUrl', 'iconUrl', 'bannerUrl', 'openUrl',
+                         'screenshots', 'sizeBytes', 'rating', 'reviewCount', 'downloadCount',
+                         'featured', 'published', 'createdBy', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(appId) &&
+                       isValidAppListing(incoming()) &&
+                       isAdmin() &&
+                       incoming().published == false &&
+                       incoming().createdBy == existing().createdBy &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'category', 'developer', 'version', 'tagline', 'description',
+                         'driveUrl', 'downloadUrl', 'iconUrl', 'bannerUrl', 'openUrl',
+                         'screenshots', 'sizeBytes', 'rating', 'reviewCount', 'downloadCount',
+                         'featured', 'published', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(appId) && isAdmin();
+    }
+
+    // --- Collection: /users/{userId} ---
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'autoCheckUpdates', 'wifiOnlyDownloads',
+                         'notificationsEnabled', 'recentSearches', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'autoCheckUpdates', 'wifiOnlyDownloads',
+                         'notificationsEnabled', 'recentSearches', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      // --- Subcollection: /users/{userId}/trackedApps/{appId} ---
+      match /trackedApps/{appId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(appId) &&
+                         request.auth.uid == userId &&
+                         incoming().userId == request.auth.uid &&
+                         isValidTrackedApp(incoming()) &&
+                         incoming().keys().hasAll(['userId', 'name', 'status', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'version', 'bytes', 'status',
+                           'localFileName', 'packageName', 'downloadedAt', 'installedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+        allow update: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(appId) &&
+                         request.auth.uid == userId &&
+                         isValidTrackedApp(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'version', 'bytes', 'status', 'localFileName',
+                           'packageName', 'downloadedAt', 'installedAt', 'updatedAt'
+                         ]);
+
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(appId) && request.auth.uid == userId;
+      }
+    }
+  }
+}

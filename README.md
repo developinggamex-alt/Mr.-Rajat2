@@ -1,30 +1,45 @@
-# AppNest — Admin and User Panels
+# AppNest — Native Android App & Game Catalog
 
-A mobile-first JavaScript web app using your existing Firebase project, foodguide-fb333. No sample listings are included.
+AppNest is a native Kotlin and Jetpack Compose Android application featuring a user catalog and an admin publishing panel backed by Firebase Authentication (Google Sign-In via Jetpack Credential Manager) and Cloud Firestore.
 
-## Open the panels
+## Features
 
-Unzip and run this from the folder with this README:
+- **Home Catalog**: Curated featured carousel, category filter chips, trending apps, and recent catalog updates synced in real time from Firestore (`/apps`).
+- **Search & Discovery**: Instant search across titles, categories, developers, and descriptions with per-user persisted recent search history.
+- **App Details & Native APK Downloader**:
+  - Direct HTTPS APK streaming downloads with live byte/speed/percentage progress, pause, resume, and cancel controls.
+  - ZIP/APK archive signature verification (`PK` header validation) and system APK installation via `FileProvider` (`REQUEST_INSTALL_PACKAGES`).
+  - Google Drive share-link fallback handling (`drive.google.com`) and optional external `Open` URL support.
+- **Downloads & Library**: Track active downloads, downloaded/installed apps, and download history (`/users/{uid}/trackedApps`).
+- **App Updates**: Semantic/numeric version comparison between tracked installs and published listings with Wi-Fi-only download enforcement.
+- **Profile & Settings**: Google Sign-In status, Wi-Fi-only toggle, auto-check updates toggle, notification preference, Privacy Policy, and Help & Support views.
+- **Admin Panel**: Role-gated catalog management for verified admins (`/admins/{uid}` or bootstrapped verified admin email), supporting creating, editing, publishing to `/apps`, saving drafts to `/appDrafts`, and deleting listings.
 
-    python -m http.server 8080 --directory dist
+## Tech Stack
 
-- User panel: http://localhost:8080/
-- Admin panel: http://localhost:8080/admin.html
+- **Language & UI**: Kotlin, Jetpack Compose, Material Design 3
+- **Navigation**: Type-safe Navigation Compose (`@Serializable` routes)
+- **Authentication**: Firebase Auth + Jetpack Credential Manager (`GetSignInWithGoogleOption` / `GetGoogleIdOption`)
+- **Database & Security**: Cloud Firestore (named database configured in `res/values/firebase_applet_config.xml`) with zero-trust `firestore.rules`
+- **Image Loading**: Coil
 
-For hosting, deploy the contents of dist to an HTTPS static host. Firebase web configuration is in dist/firebase.mjs. Serve both pages from the same origin so Firebase sign-in state can be shared.
+## Build & Verify
 
-## First-time Firebase setup
+Build the debug APK:
 
-1. In Firebase Console → Authentication → Sign-in method, enable Email/Password. Add your admin account in Authentication → Users and copy its UID.
-2. In Firebase Console → Realtime Database → Data, create the key /admins/YOUR_ADMIN_UID with the Boolean value true (not a quoted string). Create this role only for trusted admin accounts.
-3. In Realtime Database → Rules, merge the three sections from database.rules.json into your existing rules. Preserve rules for other paths. Do not leave broad parent-level read/write grants that override restrictions on admins or appDrafts. The supplied rules make /apps publicly readable and limit writes to trusted admins. Keep private records out of /apps.
-4. For Firebase password reset and local/deployed use, verify the site origin and localhost (if testing locally) under Authentication → Settings → Authorized domains.
-5. Open admin.html and sign in. Add a real listing and click Publish listing. The user panel listens for changes under /apps. Save as draft moves a listing to /appDrafts and removes it from the public catalog.
+```bash
+gradle assembleDebug
+```
 
-## App download and media links
+Run the Firestore security rules emulator tests:
 
-- Drive APK link: set file access to Anyone with the link in Drive, then paste its share link. The APK download opens through Google Drive. Google can require confirmation or limit downloads. AppNest does not count a Drive click as a completed download.
-- Direct APK link: paste an HTTPS raw APK URL with CORS allowing this site's origin. Direct links take priority. The user can pause, resume, cancel and see live bytes, speed, and percentage when the server sends a length. Pause/resume applies while the page is open. The user can use the Drive button on App Details as a fallback if both links are present.
-- For icons, banners and screenshots, use HTTPS URLs that serve image content. Paste screenshot links one per line.
-- Android installs APKs through the system installer. The Installed tab records apps the user marks manually. Optional Open links are HTTPS links supplied by the admin.
-- Settings can automatically check for newer numeric versions while AppNest is open. Updating requires downloading and installing the APK. The Wi-Fi-only preference blocks downloads when the browser cannot confirm Wi-Fi. Browser notification permissions, OS permissions, storage location and installation are controlled by the device.
+```bash
+FIRESTORE_EMULATOR_HOST="127.0.0.1:8085" node --test firestore.test.js
+```
+
+## Notes on Firebase & Distribution Links
+
+- **Admin Access**: Bootstrapped verified admin email or UID documents under `/admins/{uid}` unlock the Admin Panel. Non-admin users are strictly limited to reading published listings and managing their own `/users/{uid}` and `/users/{uid}/trackedApps` documents.
+- **Download Links**:
+  - **Direct APK links** must be HTTPS URLs serving an APK binary.
+  - **Google Drive links** should be shared as *Anyone with the link*; Drive links open through Android's browser/Drive handler when direct raw binary streaming is unavailable.

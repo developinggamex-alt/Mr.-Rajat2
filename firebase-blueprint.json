@@ -1,0 +1,229 @@
+{
+  "entities": {
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Marker document granting AppNest catalog administration privileges to a Firebase UID.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether administrator access is active."
+        }
+      },
+      "required": ["enabled"]
+    },
+    "AppListing": {
+      "title": "AppListing",
+      "description": "Published or draft Android app/game listing in the AppNest catalog.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "App title (1-100 characters)."
+        },
+        "category": {
+          "type": "string",
+          "description": "Catalog category label (1-60 characters)."
+        },
+        "developer": {
+          "type": "string",
+          "description": "Developer or publisher name (max 100 characters)."
+        },
+        "version": {
+          "type": "string",
+          "description": "Numeric or semantic version string (max 40 characters)."
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Short promotional subtitle (max 160 characters)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full application description (1-12000 characters)."
+        },
+        "driveUrl": {
+          "type": "string",
+          "description": "HTTPS Google Drive APK share or direct export link."
+        },
+        "downloadUrl": {
+          "type": "string",
+          "description": "HTTPS direct APK download URL."
+        },
+        "iconUrl": {
+          "type": "string",
+          "description": "HTTPS app icon image URL."
+        },
+        "bannerUrl": {
+          "type": "string",
+          "description": "HTTPS hero banner image URL."
+        },
+        "openUrl": {
+          "type": "string",
+          "description": "Optional HTTPS web or app launch fallback link."
+        },
+        "screenshots": {
+          "type": "array",
+          "description": "Up to 12 HTTPS screenshot image URLs."
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "APK size in bytes."
+        },
+        "rating": {
+          "type": "number",
+          "description": "App rating from 0.0 to 5.0."
+        },
+        "reviewCount": {
+          "type": "integer",
+          "description": "Total number of user reviews."
+        },
+        "downloadCount": {
+          "type": "integer",
+          "description": "Total download count."
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Whether the app is featured in the Home hero card."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "True when published in /apps, false when saved in /appDrafts."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Admin UID that created the listing."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["name", "category", "description", "published", "createdBy", "createdAt", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Per-user AppNest account preferences and recent search history.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name (1-60 characters)."
+        },
+        "autoCheckUpdates": {
+          "type": "boolean",
+          "description": "Check for newer catalog versions automatically."
+        },
+        "wifiOnlyDownloads": {
+          "type": "boolean",
+          "description": "Restrict APK downloads to Wi-Fi connections."
+        },
+        "notificationsEnabled": {
+          "type": "boolean",
+          "description": "Show download and update alerts."
+        },
+        "recentSearches": {
+          "type": "array",
+          "description": "Up to 6 recent search terms."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated."
+        }
+      },
+      "required": ["userId", "displayName", "createdAt", "updatedAt"]
+    },
+    "TrackedApp": {
+      "title": "TrackedApp",
+      "description": "Per-user download history and marked-installed app record.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "name": {
+          "type": "string",
+          "description": "App display title at time of tracking."
+        },
+        "version": {
+          "type": "string",
+          "description": "Tracked version string."
+        },
+        "bytes": {
+          "type": "integer",
+          "description": "Downloaded APK size in bytes."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["DOWNLOADED", "INSTALLED"],
+          "description": "Whether the app is in download history or marked installed."
+        },
+        "localFileName": {
+          "type": "string",
+          "description": "Local cached APK filename on device."
+        },
+        "packageName": {
+          "type": "string",
+          "description": "Android package name extracted from APK archive."
+        },
+        "downloadedAt": {
+          "type": "integer",
+          "description": "Epoch millis when download completed."
+        },
+        "installedAt": {
+          "type": "integer",
+          "description": "Epoch millis when marked installed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated."
+        }
+      },
+      "required": ["userId", "name", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Admin role marker documents keyed by Firebase UID."
+    },
+    "/apps/{appId}": {
+      "schema": { "$ref": "#/entities/AppListing" },
+      "description": "Published AppNest catalog listings readable by signed-in users and writable by admins."
+    },
+    "/appDrafts/{appId}": {
+      "schema": { "$ref": "#/entities/AppListing" },
+      "description": "Unpublished AppNest draft listings readable and writable only by admins."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile display name and preferences scoped to the owning user."
+    },
+    "/users/{userId}/trackedApps/{appId}": {
+      "schema": { "$ref": "#/entities/TrackedApp" },
+      "description": "User download history and installed app tracking scoped to the owning user."
+    }
+  }
+}

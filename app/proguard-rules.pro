@@ -1,0 +1,2 @@
+-keepattributes *Annotation*
+-keepclassmembers class com.appnest.store.model.** { *; }

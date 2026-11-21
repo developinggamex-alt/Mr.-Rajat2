@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">AppNest</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_downloads">Downloads</string>
+    <string name="nav_profile">Profile</string>
+    <string name="cd_appnest_logo">AppNest logo</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_admin_panel">Admin panel</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_hero_banner">AppNest featured banner</string>
+    <string name="auth_eyebrow">APPNEST ACCOUNT</string>
+    <string name="auth_title">Your AppNest account</string>
+    <string name="auth_subtitle">Sign in with Google to browse the catalog, track downloads, and manage your apps.</string>
+    <string name="auth_button">Sign in with Google</string>
+    <string name="home_discover_title">Discover apps &amp; games</string>
+    <string name="home_search_placeholder">Search apps, games…</string>
+    <string name="home_hero_default_title">Discover. Download. Enjoy.</string>
+    <string name="home_hero_default_subtitle">Explore curated Android apps and games on AppNest.</string>
+    <string name="home_popular_apps">Popular Apps</string>
+    <string name="downloads_title">My Downloads</string>
+    <string name="settings_title">Settings</string>
+    <string name="updates_title">App Updates</string>
+    <string name="privacy_title">Privacy Policy</string>
+    <string name="help_title">Help &amp; Support</string>
+    <string name="admin_eyebrow">APPNEST ADMIN</string>
+    <string name="admin_title">Manage catalog</string>
+</resources>
